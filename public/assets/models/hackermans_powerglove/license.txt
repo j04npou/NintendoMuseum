@@ -1,0 +1,11 @@
+Model Information:
+* title:	HackerMan's Powerglove
+* source:	https://sketchfab.com/3d-models/hackermans-powerglove-307df31d7bf041d5a65d198d28ba607b
+* author:	Snapped Celery (https://sketchfab.com/snappedcelery)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "HackerMan's Powerglove" (https://sketchfab.com/3d-models/hackermans-powerglove-307df31d7bf041d5a65d198d28ba607b) by Snapped Celery (https://sketchfab.com/snappedcelery) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Nintendo Zapper Light Gun
+* source:	https://sketchfab.com/3d-models/nintendo-zapper-light-gun-44dceff49a8b4397ac940a8fd470d471
+* author:	Matt Wilson (https://sketchfab.com/edcmwils)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Nintendo Zapper Light Gun" (https://sketchfab.com/3d-models/nintendo-zapper-light-gun-44dceff49a8b4397ac940a8fd470d471) by Matt Wilson (https://sketchfab.com/edcmwils) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

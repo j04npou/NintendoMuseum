@@ -1,14 +1,14 @@
 import './style.css'
 import gsap from 'gsap'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
 
 const scene = new THREE.Scene()
-// scene.background = new THREE.Color(0x000000)
 scene.background = new THREE.Color(0xffffff)
 
 // Camera //
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const initialCameraPosition = { x: 0, y: 1, z: 5 };
+const initialCameraPosition = { x: 0, y: 1, z: 3 };
 camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
 
 window.addEventListener('resize', () => {
@@ -71,44 +71,66 @@ const shelfMat = new THREE.MeshStandardMaterial({
 const shelf = new THREE.Mesh(shelfGeo, shelfMat); 
 scene.add(shelf);
 
-// Cube 1
-const cube1Geo = new THREE.BoxGeometry(1, 1, 1);
-const cube1Mat = new THREE.MeshStandardMaterial({
-  color: 0xff0000,
-  metalness: 0.5,
-  roughness: 0.5,
-  envMap: environmentMap
-});
-const cube1 = new THREE.Mesh(cube1Geo, cube1Mat);
-cube1.position.set(-1.5, 0.8, 0);
-cube1.isInteractuable = true;
-scene.add(cube1);
+// 3D Models
+const loader = new GLTFLoader();
 
-// Cube 2
-const cube2Geo = new THREE.BoxGeometry(1, 1, 1);
-const cube2Mat = new THREE.MeshStandardMaterial({
-  color: 0x00ff00,
-  metalness: 0.5,
-  roughness: 0.5,
-  envMap: environmentMap
-});
-const cube2 = new THREE.Mesh(cube2Geo, cube2Mat);
-cube2.position.set(0, 0.8, 0);
-cube2.isInteractuable = true;
-scene.add(cube2);
+function loadModel(url, position, scale = 1, rotation = { x: 0, y: 0, z: 0 }) {
+  loader.load(
+    url, 
+    (gltf) => {
+      const model = gltf.scene;
+      const modelContainer = new THREE.Group();
 
-// Cube 3
-const cube3Geo = new THREE.BoxGeometry(1, 1, 1);
-const cube3Mat = new THREE.MeshStandardMaterial({
-  color: 0x0000ff,
-  metalness: 0.5,
-  roughness: 0.5,
-  envMap: environmentMap
-});
-const cube3 = new THREE.Mesh(cube3Geo, cube3Mat);
-cube3.position.set(1.5, 0.8, 0);
-cube3.isInteractuable = true;
-scene.add(cube3);
+      modelContainer.position.set(position.x, position.y, position.z);
+      modelContainer.scale.set(scale, scale, scale);
+      modelContainer.rotation.set(rotation.x, rotation.y, rotation.z);
+      modelContainer.isInteractuable = true;
+
+      modelContainer.add(model);
+      
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.material.envMap = environmentMap; // Agregar el entorno si es necesario
+          child.isInteractuable = true;
+        }
+      });
+
+      scene.add(modelContainer);
+
+      levitateObject(modelContainer);
+    },
+    undefined,
+    (error) => { console.error('Error loading model:', error); }
+  );
+}
+
+const models = [
+  {
+    name: 'Game Boy Advance - Zelda Concept',
+    url: 'assets/models/gameboy_advance_-_zelda_concept/scene.gltf',
+    position: { x: -1.5, y: 0.6, z: 0 },
+    // scale: 0.5,
+    rotation: { x: 0, y: 4.5, z: 0 }
+  },
+  {
+    name: 'Zapper',
+    url: 'assets/models/nintendo_zapper_light_gun/scene.gltf',
+    position: { x: 0, y: 0.6, z: 0 },
+    scale: 0.1,
+    rotation: { x: 0, y: 4, z: 0 }
+  },
+  {
+    name: 'Power Glove',
+    url: 'assets/models/hackermans_powerglove/scene.gltf',
+    position: { x: 1.5, y: 0.8, z: 0 },
+    scale: 0.05,
+    rotation: { x: 0, y: 4, z: 0 }
+  }
+];
+
+for (const model of models) {
+  loadModel(model.url, model.position, model.scale, model.rotation);
+}
 
 // Levitation animation
 const levitateObject = (object) => {
@@ -125,11 +147,6 @@ const levitateObject = (object) => {
     delay: randomDelay,
   });
 };
-
-// Apply animation to objects
-levitateObject(cube1);
-levitateObject(cube2);
-levitateObject(cube3);
 
 // Raycaster & Mouse
 const raycaster = new THREE.Raycaster();
@@ -151,24 +168,25 @@ function onHover(event) {
   raycaster.setFromCamera(mouse, camera);
 
   // Check if the ray intersects with any object in the scene
-  var intersects = raycaster.intersectObject(scene, true);
+  const intersects = raycaster.intersectObjects(scene.children, true);
 
   if (intersects.length > 0) {
-
-    var object = intersects[0].object;
+    const object = intersects[0].object;
 
     if (object.isInteractuable) {
-      if (hoveredObject !== object) {
-        hoveredObject = object;
+      const modelContainer = object.parent;
+
+      if (hoveredObject !== modelContainer) {
+        hoveredObject = modelContainer;
 
         if (rotationTween) {
           rotationTween.kill();
         }
 
         // Rotate object
-        rotationTween = gsap.to(object.rotation, {
+        rotationTween = gsap.to(modelContainer.rotation, {
           duration: 10, // Duration for a full rotation (slower if higher)
-          y: object.rotation.y + Math.PI * 2,
+          z: modelContainer.rotation.y + Math.PI * 2,
           repeat: -1, // Repeat forever
           ease: "none",
         });
@@ -185,7 +203,7 @@ function onHover(event) {
         // Optionally reset the rotation, or leave it as is
         gsap.to(hoveredObject.rotation, {
           duration: 1,
-          y: 0,  // Reset to the original rotation (no rotation)
+          z: 0,  // Reset to the original rotation (no rotation)
           ease: "power1.inOut",
         });
 
