@@ -20,8 +20,6 @@ window.addEventListener('resize', () => {
 // Renderer //
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-// renderer.shadowMap.enabled = true
-// renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setAnimationLoop(render);
 
 document.querySelector('#app').appendChild(renderer.domElement);
@@ -38,8 +36,8 @@ directionalLight.position.set(-5, 6, 5);
 scene.add(directionalLight);
 
 // Helper to view light direction //
-const helper = new THREE.DirectionalLightHelper(directionalLight);
-scene.add(helper);
+// const helper = new THREE.DirectionalLightHelper(directionalLight);
+// scene.add(helper);
 
 // Environment map //
 const cubeTextureLoader = new THREE.CubeTextureLoader();
@@ -74,7 +72,7 @@ scene.add(shelf);
 // 3D Models
 const loader = new GLTFLoader();
 
-function loadModel(url, position, scale = 1, rotation = { x: 0, y: 0, z: 0 }) {
+function loadModel(url, name, position, scale = 1, rotation = { x: 0, y: 0, z: 0 }) {
   loader.load(
     url, 
     (gltf) => {
@@ -84,13 +82,15 @@ function loadModel(url, position, scale = 1, rotation = { x: 0, y: 0, z: 0 }) {
       modelContainer.position.set(position.x, position.y, position.z);
       modelContainer.scale.set(scale, scale, scale);
       modelContainer.rotation.set(rotation.x, rotation.y, rotation.z);
+      modelContainer.name = name;
       modelContainer.isInteractuable = true;
 
       modelContainer.add(model);
       
       model.traverse((child) => {
         if (child.isMesh) {
-          child.material.envMap = environmentMap; // Agregar el entorno si es necesario
+          child.material.envMap = environmentMap;
+          child.name = name;
           child.isInteractuable = true;
         }
       });
@@ -106,14 +106,16 @@ function loadModel(url, position, scale = 1, rotation = { x: 0, y: 0, z: 0 }) {
 
 const models = [
   {
-    name: 'Game Boy Advance - Zelda Concept',
+    name: 'Game Boy Advance',
+    description: 'The Game Boy Advance (GBA), released in 2001, is a handheld gaming console by Nintendo. It features a 32-bit processor, offering improved graphics and gameplay over its predecessors. With a wide library of games and a portable design, the GBA became one of the most popular handheld systems, known for titles like Pokémon Ruby/Sapphire and The Legend of Zelda: A Link to the Past.',
     url: 'assets/models/gameboy_advance_-_zelda_concept/scene.gltf',
-    position: { x: -1.5, y: 0.6, z: 0 },
+    position: { x: -1.7, y: 0.6, z: 0 },
     // scale: 0.5,
     rotation: { x: 0, y: 4.5, z: 0 }
   },
   {
-    name: 'Zapper',
+    name: 'NES Zapper',
+    description: 'The NES Zapper, released in 1985, is a light gun controller for the NES that allowed players to shoot at targets on the screen, notably in Duck Hunt. Its iconic orange and grey design made it a memorable accessory, contributing to the NES\'s success and becoming a classic in gaming history.',
     url: 'assets/models/nintendo_zapper_light_gun/scene.gltf',
     position: { x: 0, y: 0.6, z: 0 },
     scale: 0.1,
@@ -121,15 +123,16 @@ const models = [
   },
   {
     name: 'Power Glove',
+    description: 'The Power Glove, created by Nintendo and Mattel, was released in 1989 as an innovative controller for the NES that allowed players to interact with games through hand movements. Although it promised a more immersive experience, its lack of precision and comfort limited its success. Despite this, it became an iconic piece of pop culture.',
     url: 'assets/models/hackermans_powerglove/scene.gltf',
-    position: { x: 1.5, y: 0.8, z: 0 },
+    position: { x: 1.7, y: 0.8, z: 0 },
     scale: 0.05,
     rotation: { x: 0, y: 4, z: 0 }
   }
 ];
 
 for (const model of models) {
-  loadModel(model.url, model.position, model.scale, model.rotation);
+  loadModel(model.url, model.name, model.position, model.scale, model.rotation);
 }
 
 // Levitation animation
@@ -153,6 +156,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let hoveredObject = null;
 let rotationTween = null;
+const descriptionBox = document.getElementById("description");
 
 // Crate a new EventListener for the mousemove event
 window.addEventListener('mousemove', onHover);
@@ -176,31 +180,22 @@ function onHover(event) {
     if (object.isInteractuable) {
       const modelContainer = object.parent;
 
-      if (hoveredObject !== modelContainer) {
+      if (hoveredObject !== modelContainer && descriptionBox.classList.contains("hidden")) {
         hoveredObject = modelContainer;
 
-        if (rotationTween) {
-          rotationTween.kill();
-        }
-
-        // Rotate object
-        rotationTween = gsap.to(modelContainer.rotation, {
-          duration: 10, // Duration for a full rotation (slower if higher)
-          z: modelContainer.rotation.y + Math.PI * 2,
-          repeat: -1, // Repeat forever
-          ease: "none",
-        });
-
+        rotateObject(modelContainer);
       }
+
+      document.body.style.cursor = "pointer";
     }
   } else {
       // If no object is hovered, reset the rotation of the previous object
       if (hoveredObject !== null) {
-        if (rotationTween) {
+        if (rotationTween && descriptionBox.classList.contains("hidden")) {
           rotationTween.kill();
         }
 
-        // Optionally reset the rotation, or leave it as is
+        // Reset the rotation
         gsap.to(hoveredObject.rotation, {
           duration: 1,
           z: 0,  // Reset to the original rotation (no rotation)
@@ -209,12 +204,77 @@ function onHover(event) {
 
         hoveredObject = null;
       }
+      document.body.style.cursor = "auto";
   }
 	
 	render();
 }
 
-// camera.lookAt(shelf.position);
+window.addEventListener('click', onClick);
+
+function onClick(event) {
+  event.preventDefault();
+
+  // Update mouse position
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Update raycaster
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check if the ray intersects with any object in the scene
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  if (intersects.length > 0) {
+    const object = intersects[0].object;
+
+    if (object.isInteractuable) {
+      const modelInfo = models.find(model => model.name === object.name);
+      
+      if (modelInfo) {
+        descriptionBox.querySelector(".label").textContent = modelInfo.name;
+        descriptionBox.querySelector(".text").textContent = modelInfo.description;
+        descriptionBox.classList.remove("hidden");
+
+        rotateObject(object.parent);
+        focusCoordinates(modelInfo.position, 2);
+
+        // Desactivate hover
+        window.removeEventListener('mousemove', onHover);
+      } else {
+        focusCoordinates(initialCameraPosition);
+      }
+    }
+  } else {
+    descriptionBox.classList.add("hidden");
+    focusCoordinates(initialCameraPosition);
+
+    // Reactivate hover
+    window.addEventListener('mousemove', onHover);
+  }
+}
+
+function rotateObject(object, duration = 10) {
+  if (rotationTween) {
+    rotationTween.kill();
+  }
+  rotationTween = gsap.to(object.rotation, {
+    z: object.rotation.z + Math.PI * 2,
+    duration,
+    repeat: -1,
+    ease: "none",
+  });
+}
+
+function focusCoordinates(target, offset = 0) {
+  gsap.to(camera.position, {
+    x: target.x,
+    y: target.y,
+    z: target.z + offset,
+    duration: 2,
+    ease: "power2.inOut",
+  });
+}
 
 function render() {
   renderer.render(scene, camera);
