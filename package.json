@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "gh-pages": "^6.2.0",
-    "vite": "^6.0.1"
+    "vite": "^6.0.9"
   },
   "dependencies": {
     "gsap": "^3.12.5",
